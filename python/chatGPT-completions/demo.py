@@ -40,7 +40,7 @@ instruction = "You are a helpful virtual assistant that answers questions using 
 
 
 groundxVersion = "v1"
-groundxBaseUrl = "https://devapi.groundx.ai/api/%s" % groundxVersion
+groundxBaseUrl = "https://api.groundx.ai/api/%s" % groundxVersion
 
 openai.api_key = openaiKey
 
@@ -61,7 +61,7 @@ searchResult = requests.post(
 
 if searchResult.status_code != 200:
     print(
-        "received status [%d] with message [%s]"
+        "\n\n\treceived status [%d] with message [%s]\n\n\n"
         % (searchResult.status_code, searchResult.text)
     )
     sys.exit()
@@ -69,7 +69,10 @@ if searchResult.status_code != 200:
 searchData = json.loads(searchResult.text)
 
 if "search" not in searchData or "results" not in searchData["search"]:
-    print("empty result for query [%s]\n\nresult:\n\n%s" % (query, searchResult.text))
+    print(
+        "\n\n\tempty result for query [%s]\n\n\tresult:\n\n%s\n\n\n"
+        % (query, searchResult.text)
+    )
     sys.exit()
 
 llmText = ""
@@ -98,11 +101,11 @@ completion = openai.ChatCompletion.create(
 )
 
 if len(completion.choices) == 0:
-    print("empty result from OpenAI for query [%s]\n\nresult:\n\n" % query)
+    print("\n\n\tempty result from OpenAI for query [%s]\n\ntresult:\n\n\ns" % query)
     print(completion)
     sys.exit()
 
 print(
-    "\n\nQUERY\n\n%s\n\n\nRESULT\n\n%s\n\n\n"
-    % (query, completion.choices[0].message.content)
+    "\n\nQUERY\n\n%s\n\n\nSCORE\n\n[%.2f]\n\nRESULT\n\n%s\n\n\n"
+    % (query, searchData["search"]["score"], completion.choices[0].message.content)
 )
