@@ -9,19 +9,16 @@ import requests
 # GroundX API Key
 # Found in your GroundX account:
 # https://dashboard.groundx.ai/apikey
-
 groundxKey = "YOUR_GROUNDX_KEY"
 
 # GroundX Project ID
 # Found in your GroundX account OR by querying /project
 # https://dashboard.groundx.ai/projects
-
 groundxProjectId = PROJECT_ID
 
 # OpenAI API Key
 # Found in your OpenAI account:
 # https://platform.openai.com/account/api-keys
-
 openaiKey = "YOUR_OPENAI_KEY"
 
 # OpenAI model ID (e.g. gpt-4, gpt-3.5-turbo)
