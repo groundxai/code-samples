@@ -106,6 +106,6 @@ if len(completion.choices) == 0:
     sys.exit()
 
 print(
-    "\n\nQUERY\n\n%s\n\n\nSCORE\n\n[%.2f]\n\nRESULT\n\n%s\n\n\n"
+    "\n\nQUERY\n\n%s\n\n\nSCORE\n\n[%.2f]\n\n\nRESULT\n\n%s\n\n\n"
     % (query, searchData["search"]["score"], completion.choices[0].message.content)
 )
