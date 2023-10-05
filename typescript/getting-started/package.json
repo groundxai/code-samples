@@ -1,0 +1,22 @@
+{
+  "name": "getting-started",
+  "version": "1.0.0",
+  "description": "GroundX.ai - Getting Started with TypeScript SDK",
+  "main": "index.js",
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/groundxai/code-samples.git"
+  },
+  "author": "support@groundx.ai",
+  "license": "ISC",
+  "bugs": {
+    "url": "https://github.com/groundxai/code-samples/issues"
+  },
+  "homepage": "https://github.com/groundxai/code-samples#readme",
+  "dependencies": {
+    "groundx-typescript-sdk": "^1.1.0"
+  }
+}
