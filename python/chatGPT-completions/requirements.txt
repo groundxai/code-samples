@@ -1,2 +1,2 @@
 openai
-requests
+groundx-python-sdk

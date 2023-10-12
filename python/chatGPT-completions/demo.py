@@ -1,8 +1,7 @@
-import json, sys
+import sys
 
+from groundx import Groundx, ApiException
 import openai
-import requests
-
 
 ########## CHANGE THESE ############
 
@@ -11,10 +10,10 @@ import requests
 # https://dashboard.groundx.ai/apikey
 groundxKey = "YOUR_GROUNDX_KEY"
 
-# GroundX Project ID
-# Found in your GroundX account OR by querying /project
-# https://dashboard.groundx.ai/projects
-groundxProjectId = PROJECT_ID
+# GroundX Project ID, GroupID, or Bucket ID
+# Found in your GroundX account
+# OR by querying /project, /group, /bucket
+groundxId = YOUR_ID
 
 # OpenAI API Key
 # Found in your OpenAI account:
@@ -38,52 +37,32 @@ maxInstructCharacters = 2000
 # You may want to change this
 instruction = "You are a helpful virtual assistant that answers questions using the content below. Your task is to create detailed answers to the questions by combining your understanding of the world with the content provided below. Do not share links."
 
-
-groundxVersion = "v1"
-groundxBaseUrl = "https://api.groundx.ai/api/%s" % groundxVersion
+# Initialize the GroundX and OpenAI clients
+groundx = Groundx(
+    api_key=groundxKey,
+)
 
 openai.api_key = openaiKey
 
-searchResult = requests.post(
-    groundxBaseUrl + "/search/%d" % groundxProjectId,
-    headers={
-        "Content-Type": "application/json",
-        "X-API-Key": groundxKey,
-    },
-    data=json.dumps(
-        {
-            "search": {
-                "query": query,
-            }
-        }
-    ),
-)
 
-if searchResult.status_code != 200:
-    print(
-        "\n\n\treceived status [%d] with message [%s]\n\n\n"
-        % (searchResult.status_code, searchResult.text)
-    )
-    sys.exit()
+# Do a GroundX search
+try:
+    content_response = groundx.search.content(id=groundxId, search={"query": query})
+    results = content_response.body["search"]
+except ApiException as e:
+    print("Exception when calling SearchApi.content: %s\n" % e)
 
-searchData = json.loads(searchResult.text)
-
-if "search" not in searchData or "results" not in searchData["search"]:
-    print(
-        "\n\n\tempty result for query [%s]\n\n\tresult:\n\n%s\n\n\n"
-        % (query, searchResult.text)
-    )
-    sys.exit()
-
+# Fill the LLM context window with search results
 llmText = ""
-for resl in searchData["search"]["results"]:
-    if "text" in resl and len(resl["text"]) > 0:
-        if len(llmText) + len(resl["text"]) > maxInstructCharacters:
+for r in results["results"]:
+    if "text" in r and len(r["text"]) > 0:
+        if len(llmText) + len(r["text"]) > maxInstructCharacters:
             break
         elif len(llmText) > 0:
             llmText += "\n"
-        llmText += resl["text"]
+        llmText += r["text"]
 
+# Do an OpenAI completion with the search results
 completion = openai.ChatCompletion.create(
     model=openaiModel,
     messages=[
@@ -101,11 +80,11 @@ completion = openai.ChatCompletion.create(
 )
 
 if len(completion.choices) == 0:
-    print("\n\n\tempty result from OpenAI for query [%s]\n\ntresult:\n\n\ns" % query)
+    print("\n\n\tempty result from OpenAI for query [%s]\n\ntresult:\n\n\n" % query)
     print(completion)
     sys.exit()
 
 print(
     "\n\nQUERY\n\n%s\n\n\nSCORE\n\n[%.2f]\n\n\nRESULT\n\n%s\n\n\n"
-    % (query, searchData["search"]["score"], completion.choices[0].message.content)
+    % (query, results["score"], completion.choices[0].message.content)
 )
