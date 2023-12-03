@@ -1,7 +1,12 @@
 import fs from 'fs';
 import { Groundx } from "groundx-typescript-sdk";
 
-const groundxKey = "YOUR_GROUNDX_KEY";
+import dotenv from 'dotenv'; 
+dotenv.config();
+
+if (!process.env.GROUNDX_API_KEY) {
+  throw Error("You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
+}
 
 // set to skip lookup, otherwise will be set to first result
 let bucketId = 0;
@@ -15,11 +20,6 @@ const fileName = ""
 
 // set to local file path to upload local file
 const uploadLocal = "";
-
-
-if (groundxKey === "YOUR_GROUNDX_KEY") {
-  throw Error("set your GroundX key");
-}
 
 if (uploadLocal === "") {
   throw Error("set the local file path")
@@ -36,7 +36,7 @@ if (fileName === "") {
 
 // initialize client
 const groundx = new Groundx({
-  apiKey: groundxKey,
+  apiKey: process.env.GROUNDX_API_KEY,
 });
 
 
@@ -85,7 +85,9 @@ if (!ingest || !ingest.status || ingest.status != 200 ||
 }
 
 // poll ingest status
-while (ingest.data.ingest.status !== "complete" && ingest.data.ingest.status !== "error") {
+while (ingest.data.ingest.status !== "complete" &&
+  ingest.data.ingest.status !== "error" &&
+  ingest.data.ingest.status !== "cancelled") {
   ingest = await groundx.documents.getProcessingStatusById({
     processId: ingest.data.ingest.processId,
   });

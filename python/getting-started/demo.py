@@ -1,13 +1,25 @@
+import os
+
 from groundx import Groundx, ApiException
 
-groundxKey = "YOUR_GROUNDX_KEY"
-query = "YOUR_QUERY"
+from dotenv import load_dotenv
 
-# set to skip lookup, otherwise will be set to first result
+load_dotenv()
+
+if os.getenv("GROUNDX_API_KEY") is None:
+    raise Exception(
+        """
+
+    You have not set a required environment variable (GROUNDX_API_KEY)
+    Copy .env.sample and rename it to .env then fill in the missing values
+"""
+    )
+
+query = "YOUR QUERY"
+
+# set to a value to skip a bucket lookup
+# otherwise this demo will use the first result from get all buckets
 bucketId = 0
-
-# set to skip lookup, otherwise will be set to first result
-projectId = 0
 
 # enumerated file type (e.g. docx, pdf)
 # must be set to upload local or hosted
@@ -23,13 +35,10 @@ uploadLocal = ""
 # set to hosted URL to upload hosted file
 uploadHosted = ""
 
-if groundxKey == "YOUR_GROUNDX_KEY":
-    raise Exception("set your GroundX key")
-
 
 # initialize client
 groundx = Groundx(
-    api_key=groundxKey,
+    api_key=os.getenv("GROUNDX_API_KEY"),
 )
 
 
@@ -66,6 +75,7 @@ if uploadLocal != "" and fileType != "" and fileName != "":
         while (
             ingest.body["ingest"]["status"] != "complete"
             and ingest.body["ingest"]["status"] != "error"
+            and ingest.body["ingest"]["status"] != "cancelled"
         ):
             ingest = groundx.documents.get_processing_status_by_id(
                 process_id=ingest.body["ingest"]["processId"]
@@ -74,22 +84,17 @@ if uploadLocal != "" and fileType != "" and fileName != "":
         print("Exception when calling DocumentApi.upload_local: %s\n" % e)
 
 
-if uploadHosted != "" and fileType != "":
+if uploadHosted != "":
     # upload hosted documents to GroundX
     try:
         ingest = groundx.documents.upload_remote(
-            documents=[
-                {
-                    "bucketId": bucketId,
-                    "sourceUrl": uploadHosted,
-                    "fileType": fileType,
-                }
-            ],
+            documents=[{"bucketId": bucketId, "sourceUrl": uploadHosted}],
         )
 
         while (
             ingest.body["ingest"]["status"] != "complete"
             and ingest.body["ingest"]["status"] != "error"
+            and ingest.body["ingest"]["status"] != "cancelled"
         ):
             ingest = groundx.documents.get_processing_status_by_id(
                 process_id=ingest.body["ingest"]["processId"]
@@ -97,27 +102,11 @@ if uploadHosted != "" and fileType != "":
     except ApiException as e:
         print("Exception when calling DocumentApi.upload_remote: %s\n" % e)
 
-
-if projectId == 0:
-    # list projects
-    try:
-        project_response = groundx.projects.list()
-
-        if len(project_response.body["projects"]) < 1:
-            print(project_response.body["projects"])
-            raise Exception("no results from projects")
-
-        projectId = project_response.body["projects"][0]["projectId"]
-        print(projectId)
-    except ApiException as e:
-        print("Exception when calling ProjectApi.list: %s\n" % e)
-
-
 if query != "":
     # search
     try:
-        content_response = groundx.search.content(id=projectId, search={"query": query})
+        content_response = groundx.search.content(id=bucketId, query=query)
 
-        print(content_response.body["search"])
+        print(content_response.body["search"]["text"])
     except ApiException as e:
         print("Exception when calling SearchApi.content: %s\n" % e)

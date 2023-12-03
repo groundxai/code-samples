@@ -1,35 +1,20 @@
 import { Groundx } from "groundx-typescript-sdk";
 import OpenAI from 'openai';
 
-/******* CHANGE THESE *******/
+import dotenv from 'dotenv'; 
+dotenv.config();
 
-// GroundX API Key
-// Found in your GroundX account:
-// https://dashboard.groundx.ai/apikey
-const groundxKey = "YOUR_GROUNDX_KEY";
+if (!process.env.GROUNDX_API_KEY || !process.env.OPENAI_API_KEY) {
+    throw Error("You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
+}
 
-// GroundX Project ID, GroupID, or Bucket ID
+// GroundX Project ID or Bucket ID
 // Found in your GroundX account
-// OR by querying /project, /group, /bucket
-const groundxId = YOUR_ID;
-
-// OpenAI API Key
-// Found in your OpenAI account:
-// https://platform.openai.com/account/api-keys
-const openaiKey = "YOUR_OPENAI_KEY";
-
-// OpenAI model ID (e.g. gpt-4, gpt-3.5-turbo)
-const openaiModel = "gpt-3.5-turbo";
+// OR by querying /project, /bucket
+const groundxId = 0;
 
 // Your question
-const query = "YOUR QUESTION HERE";
-
-// Number of characters of search text to include
-// ~3.5 characters per token
-const maxInstructCharacters = 2000;
-
-/******* END CHANGE THESE *******/
-
+const query = "YOUR QUERY HERE";
 
 // Instructions sent to ChatGPT for completions
 // You may want to change this
@@ -38,49 +23,36 @@ const instruction = "You are a helpful virtual assistant that answers questions 
 
 // Initialize the GroundX and OpenAI clients
 const groundx = new Groundx({
-    apiKey: groundxKey,
+    apiKey: process.env.GROUNDX_API_KEY,
 });
 
 const openai = new OpenAI({
-    apiKey: openaiKey,
+    apiKey: process.env.OPENAI_API_KEY,
 });
 
 
 // Do a GroundX search
 const result = await groundx.search.content({
     id: groundxId,
-    search: {
-      query: query
-    },
+    query: query,
 });
 if (!result || !result.status || result.status != 200 || !result.data || !result.data.search) {
     console.error(result);
     throw Error("GroundX request failed");
 }
 
-if (result.data.search.count < 1) {
+if (!result.data.search.text) {
     console.error("no results from search");
     console.log(result.data.search);
     throw Error("no results from GroundX search");
 }
 
-// Fill the LLM context window with search results
-let llmText = "";
-result.data.search.results.forEach((r) => {
-    if (r["text"] && r["text"].length > 0) {
-        if (llmText.length + r["text"].length > maxInstructCharacters) {
-            return;
-        } else if (llmText.length > 0) {
-            llmText += "\n";
-        }
-        llmText += r["text"];
-    }
-});
-
+// Access our suggested retrieved context
+let llmText = result.data.search.text;
 
 // Do an OpenAI completion with the search results
 const completion = await openai.chat.completions.create({
-    model: openaiModel,
+    model: process.env.OPENAI_MODEL,
     messages: [
         {
             "role": "system",

@@ -1,14 +1,17 @@
 import fs from 'fs';
 import { Groundx } from "groundx-typescript-sdk";
 
-const groundxKey = "YOUR_GROUNDX_KEY";
-const query = "YOUR_QUERY";
+import dotenv from 'dotenv'; 
+dotenv.config();
+
+if (!process.env.GROUNDX_API_KEY) {
+  throw Error("You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
+}
+
+const query = "YOUR QUERY";
 
 // set to skip lookup, otherwise will be set to first result
 let bucketId = 0;
-
-// set to skip lookup, otherwise will be set to first result
-let projectId = 0;
 
 // enumerated file type (e.g. docx, pdf)
 // must be set to upload local or hosted
@@ -23,14 +26,9 @@ const uploadLocal = "";
 // set to hosted URL to upload hosted file
 const uploadHosted = "";
 
-if (groundxKey === "YOUR_GROUNDX_KEY") {
-  throw Error("set your GroundX key");
-}
-
-
 // initialize client
 const groundx = new Groundx({
-  apiKey: groundxKey,
+  apiKey: process.env.GROUNDX_API_KEY,
 });
 
 
@@ -73,7 +71,9 @@ if (uploadLocal !== "" && fileType !== "" && fileName !== "") {
   }
 
   // poll ingest status
-  while (ingest.data.ingest.status !== "complete" && ingest.data.ingest.status !== "error") {
+  while (ingest.data.ingest.status !== "complete" &&
+    ingest.data.ingest.status !== "error" &&
+    ingest.data.ingest.status !== "cancelled") {
     ingest = await groundx.documents.getProcessingStatusById({
       processId: ingest.data.ingest.processId,
     });
@@ -106,7 +106,9 @@ if (uploadHosted !== "" && fileType !== "") {
   }
 
   // poll ingest status
-  while (ingest.data.ingest.status !== "complete" && ingest.data.ingest.status !== "error") {
+  while (ingest.data.ingest.status !== "complete" &&
+    ingest.data.ingest.status !== "error" &&
+    ingest.data.ingest.status !== "cancelled") {
     ingest = await groundx.documents.getProcessingStatusById({
       processId: ingest.data.ingest.processId,
     });
@@ -120,29 +122,10 @@ if (uploadHosted !== "" && fileType !== "") {
   }
 }
 
-
-if (projectId === 0) {
-  // list projects
-  const projResponse = await groundx.projects.list();
-  if (!projResponse || !projResponse.status || projResponse.status != 200 ||
-    !projResponse.data || !projResponse.data.projects) {
-  console.error(projResponse);
-  throw Error("GroundX project request failed");
-  }
-
-  if (projResponse.data.projects.count < 1) {
-  console.error("no results from projects");
-  console.log(projResponse.data.projects);
-  throw Error("no results from GroundX project query");
-  }
-
-  projectId = projResponse.data.projects[0].projectId;
-}
-
 if (query !== "") {
   // search
   const searchResponse = await groundx.search.content({
-    id: projectId,
+    id: bucketId,
     search: {
       query: query
     },
@@ -154,11 +137,11 @@ if (query !== "") {
     throw Error("GroundX search request failed");
   }
 
-  if (searchResponse.data.search.count < 1) {
+  if (!searchResponse.data.search.text) {
     console.error("no results from search");
-    console.log(projResponse.data.search);
+    console.log(searchResponse.data.search);
     throw Error("no results from GroundX search query");
   }
 
-  console.log(searchResponse.data.search);
+  console.log(searchResponse.data.search.text);
 }

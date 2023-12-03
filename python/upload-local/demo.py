@@ -1,13 +1,24 @@
+import os
+
 from groundx import Groundx, ApiException
 
-groundxKey = "YOUR_GROUNDX_KEY"
+from dotenv import load_dotenv
 
-# set to skip lookup, otherwise will be set to first result
+if os.getenv("GROUNDX_API_KEY") is None:
+    raise Exception(
+        """
+
+    You have not set a required environment variable (GROUNDX_API_KEY)
+    Copy .env.sample and rename it to .env then fill in the missing values
+"""
+    )
+
+# set to a value to skip a bucket lookup
+# otherwise this demo will use the first result from get all buckets
 bucketId = 0
 
 # enumerated file type (e.g. docx, pdf)
 # must be set to upload local or hosted
-# fileType = ""
 fileType = ""
 
 # must be set to upload local
@@ -15,9 +26,6 @@ fileName = ""
 
 # set to local file path to upload local file
 uploadLocal = ""
-
-if groundxKey == "YOUR_GROUNDX_KEY":
-    raise Exception("set your GroundX key")
 
 if uploadLocal == "":
     raise Exception("set the local file path")
@@ -31,7 +39,7 @@ if fileName == "":
 
 # initialize client
 groundx = Groundx(
-    api_key=groundxKey,
+    api_key=os.getenv("GROUNDX_API_KEY"),
 )
 
 
@@ -72,6 +80,7 @@ try:
     while (
         ingest.body["ingest"]["status"] != "complete"
         and ingest.body["ingest"]["status"] != "error"
+        and ingest.body["ingest"]["status"] != "cancelled"
     ):
         ingest = groundx.documents.get_processing_status_by_id(
             process_id=ingest.body["ingest"]["processId"]

@@ -1,2 +1,3 @@
-openai
-groundx-python-sdk
+openai>=1.0.0
+groundx-python-sdk>=1.3.10
+python-dotenv

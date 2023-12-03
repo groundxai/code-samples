@@ -1,37 +1,28 @@
-import sys
+import os, sys
 
 from groundx import Groundx, ApiException
 import openai
 
-########## CHANGE THESE ############
+from dotenv import load_dotenv
 
-# GroundX API Key
-# Found in your GroundX account:
-# https://dashboard.groundx.ai/apikey
-groundxKey = "YOUR_GROUNDX_KEY"
+load_dotenv()
 
-# GroundX Project ID, GroupID, or Bucket ID
+if os.getenv("GROUNDX_API_KEY") is None or os.getenv("OPENAI_API_KEY") is None:
+    raise Exception(
+        """
+
+    You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY)
+    Copy .env.sample and rename it to .env then fill in the missing values
+"""
+    )
+
+# GroundX Project ID or Bucket ID
 # Found in your GroundX account
-# OR by querying /project, /group, /bucket
-groundxId = YOUR_ID
-
-# OpenAI API Key
-# Found in your OpenAI account:
-# https://platform.openai.com/account/api-keys
-openaiKey = "YOUR_OPENAI_KEY"
-
-# OpenAI model ID (e.g. gpt-4, gpt-3.5-turbo)
-openaiModel = "gpt-3.5-turbo"
+# OR by querying /project, /bucket
+groundxId = 0
 
 # Your question
-query = "YOUR QUESTION HERE"
-
-# Number of characters of search text to include
-# ~3.5 characters per token
-maxInstructCharacters = 2000
-
-######## END CHANGE THESE ##########
-
+query = "YOUR QUERY HERE"
 
 # Instructions sent to ChatGPT for completions
 # You may want to change this
@@ -39,32 +30,28 @@ instruction = "You are a helpful virtual assistant that answers questions using 
 
 # Initialize the GroundX and OpenAI clients
 groundx = Groundx(
-    api_key=groundxKey,
+    api_key=os.getenv("GROUNDX_API_KEY"),
 )
 
-openai.api_key = openaiKey
+openai.api_key = os.getenv("OPENAI_API_KEY")
 
 
 # Do a GroundX search
 try:
-    content_response = groundx.search.content(id=groundxId, search={"query": query})
+    content_response = groundx.search.content(id=groundxId, query=query)
     results = content_response.body["search"]
 except ApiException as e:
     print("Exception when calling SearchApi.content: %s\n" % e)
 
-# Fill the LLM context window with search results
-llmText = ""
-for r in results["results"]:
-    if "text" in r and len(r["text"]) > 0:
-        if len(llmText) + len(r["text"]) > maxInstructCharacters:
-            break
-        elif len(llmText) > 0:
-            llmText += "\n"
-        llmText += r["text"]
+# Access our suggested retrieved context
+llmText = results["text"]
 
-# Do an OpenAI completion with the search results
-completion = openai.ChatCompletion.create(
-    model=openaiModel,
+if llmText == "":
+    raise Exception("\n\n\tYour search returned an empty result\n")
+
+# Do an OpenAI generation with the retrieved context
+completion = openai.chat.completions.create(
+    model=os.getenv("OPENAI_MODEL"),
     messages=[
         {
             "role": "system",
