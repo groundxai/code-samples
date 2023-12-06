@@ -126,9 +126,7 @@ if (query !== "") {
   // search
   const searchResponse = await groundx.search.content({
     id: bucketId,
-    search: {
-      query: query
-    },
+    query: query
   });
 
   if (!searchResponse || !searchResponse.status || searchResponse.status != 200 ||
