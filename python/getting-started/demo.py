@@ -1,4 +1,4 @@
-import os
+import os, time
 
 from groundx import Groundx, ApiException
 
@@ -77,6 +77,7 @@ if uploadLocal != "" and fileType != "" and fileName != "":
             and ingest.body["ingest"]["status"] != "error"
             and ingest.body["ingest"]["status"] != "cancelled"
         ):
+            time.sleep(3)
             ingest = groundx.documents.get_processing_status_by_id(
                 process_id=ingest.body["ingest"]["processId"]
             )
@@ -96,6 +97,7 @@ if uploadHosted != "":
             and ingest.body["ingest"]["status"] != "error"
             and ingest.body["ingest"]["status"] != "cancelled"
         ):
+            time.sleep(3)
             ingest = groundx.documents.get_processing_status_by_id(
                 process_id=ingest.body["ingest"]["processId"]
             )

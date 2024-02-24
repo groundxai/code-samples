@@ -1,8 +1,10 @@
-import os
+import os, time
 
 from groundx import Groundx, ApiException
 
 from dotenv import load_dotenv
+
+load_dotenv()
 
 if os.getenv("GROUNDX_API_KEY") is None:
     raise Exception(
@@ -74,6 +76,7 @@ try:
         and ingest.body["ingest"]["status"] != "error"
         and ingest.body["ingest"]["status"] != "cancelled"
     ):
+        time.sleep(3)
         ingest = groundx.documents.get_processing_status_by_id(
             process_id=ingest.body["ingest"]["processId"]
         )
