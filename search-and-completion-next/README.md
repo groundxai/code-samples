@@ -53,9 +53,9 @@ yarn install
 ### Run locally
 
 ```bash
-npm run start
+npm run dev
 # or
-yarn run start
+yarn run dev
 ```
 
 This will create a local server on [http://localhost:3000](http://localhost:3000) which is accessible via a post request to the `/search` endpoint.
