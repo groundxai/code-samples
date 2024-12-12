@@ -1,145 +1,94 @@
-import fs from 'fs';
-import { Groundx } from "groundx-typescript-sdk";
+import { GroundXClient } from "groundx";
 
 import dotenv from 'dotenv'; 
 dotenv.config();
 
 if (!process.env.GROUNDX_API_KEY) {
-  throw Error("You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
+  throw new Error("You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
 }
 
-const query = "YOUR QUERY";
-
-// set to skip lookup, otherwise will be set to first result
-let bucketId = 0;
-
-// enumerated file type (e.g. docx, pdf)
-// must be set to upload local or hosted
-const fileType = "";
-
-// must be set to upload local
-const fileName = ""
-
-// set to local file path to upload local file
-const uploadLocal = "";
-
-// set to hosted URL to upload hosted file
-const uploadHosted = "";
+const opts = {
+  query: "Transformer",
+  bucketId: null,
+  fileType: "pdf",
+  fileName: "attention.pdf",
+  localFilePath: "/home/celestial/Documents/projects/eyelevel/code-samples/typescript/getting-started/attention.pdf",
+  remoteUrl: null
+};
 
 // initialize client
-const groundx = new Groundx({
+const client = new GroundXClient({
   apiKey: process.env.GROUNDX_API_KEY,
 });
 
-
-if (bucketId === 0) {
+const usingBucket = async () => {
   // list buckets
-  const bucketResponse = await groundx.buckets.list();
-  if (!bucketResponse || !bucketResponse.status || bucketResponse.status != 200 ||
-      !bucketResponse.data || !bucketResponse.data.buckets) {
-    console.error(bucketResponse);
-    throw Error("GroundX bucket request failed");
+  const buckets = await client.buckets.list().catch(err => {
+    throw new Error("GroundX bucket request failed" + err);
+  });
+
+  if (buckets.buckets.count < 1) {
+    throw new Error("no results from GroundX bucket query");
   }
 
-  if (bucketResponse.data.buckets.count < 1) {
-    console.error("no results from buckets");
-    console.log(bucketResponse.data.buckets);
-    throw Error("no results from GroundX bucket query");
-  }
-
-  bucketId = bucketResponse.data.buckets[0].bucketId;
+  return buckets.buckets[0].bucketId;
 }
 
-
-if (uploadLocal !== "" && fileType !== "" && fileName !== "") {
+const ingest = async (bucketId, filePath) => {
   // upload local documents to GroundX
-  let ingest = await groundx.documents.uploadLocal([
+  let ingest = await client.ingest([
     {
-      blob: fs.readFileSync(uploadLocal),
-      metadata: {
-        bucketId: bucketId,
-        fileName: fileName,
-        fileType: fileType,
-      },
+      bucketId: bucketId,
+      filePath: filePath,
+      fileName: opts.fileName,
+      fileType: opts.fileType
     }
-  ]);
-
-  if (!ingest || !ingest.status || ingest.status != 200 ||
-    !ingest.data || !ingest.data.ingest) {
-    console.error(ingest);
-    throw Error("GroundX upload request failed");
-  }
+  ]).catch(err => {
+    throw new Error("GroundX upload request failed: " + err);
+  });
 
   // poll ingest status
-  while (ingest.data.ingest.status !== "complete" &&
-    ingest.data.ingest.status !== "error" &&
-    ingest.data.ingest.status !== "cancelled") {
-    ingest = await groundx.documents.getProcessingStatusById({
-      processId: ingest.data.ingest.processId,
+  while (ingest.ingest.status !== "complete" &&
+    ingest.ingest.status !== "error" &&
+    ingest.ingest.status !== "cancelled") {
+    ingest = await client.documents.getProcessingStatusById(ingest.ingest.processId).catch(err => {
+      throw new Error("GroundX upload request failed: " + err);
     });
-    if (!ingest || !ingest.status || ingest.status != 200 ||
-      !ingest.data || !ingest.data.ingest) {
-      console.error(ingest);
-      throw Error("GroundX upload request failed");
-    }
 
     await new Promise((resolve) => setTimeout(resolve, 3000));
   }
+
+  return ingest
 }
 
-if (uploadHosted !== "" && fileType !== "") {
-  // upload hosted documents to GroundX
-  let ingest = await groundx.documents.uploadRemote({
-    documents: [
-      {
-        bucketId: bucketId,
-        fileType: fileType,
-        sourceUrl: uploadHosted,
-      }
-    ]
+
+const search = async bucketId => {
+  const searchResponse = await client.search.content(bucketId, {
+    query: opts.query
+  }).catch(err => {
+    throw new Error("GroundX search request failed: " + err);
   });
 
-  if (!ingest || !ingest.status || ingest.status != 200 ||
-    !ingest.data || !ingest.data.ingest) {
-    console.error(ingest);
-    throw Error("GroundX upload request failed");
+  if (!searchResponse.search.text) {
+    console.log(searchResponse.search);
+    throw new Error("no results from GroundX search query");
   }
 
-  // poll ingest status
-  while (ingest.data.ingest.status !== "complete" &&
-    ingest.data.ingest.status !== "error" &&
-    ingest.data.ingest.status !== "cancelled") {
-    ingest = await groundx.documents.getProcessingStatusById({
-      processId: ingest.data.ingest.processId,
-    });
-    if (!ingest || !ingest.status || ingest.status != 200 ||
-      !ingest.data || !ingest.data.ingest) {
-      console.error(ingest);
-      throw Error("GroundX upload request failed");
-    }
+  console.log(searchResponse.search.text);
+};
 
-    await new Promise((resolve) => setTimeout(resolve, 3000));
-  }
+let bucketId = opts.bucketId;
+if (!bucketId) bucketId = await usingBucket();
+
+if (opts.localFilePath && !(opts.fileType && opts.fileName)) {
+  throw new Error("local filepath is set but fileType/fileName is not");
 }
 
-if (query !== "") {
-  // search
-  const searchResponse = await groundx.search.content({
-    id: bucketId,
-    query: query
-  });
-
-  if (!searchResponse || !searchResponse.status || searchResponse.status != 200 ||
-    !searchResponse.data || !searchResponse.data.search) {
-    console.error(searchResponse);
-    throw Error("GroundX search request failed");
-  }
-
-  if (!searchResponse.data.search.text) {
-    console.error("no results from search");
-    console.log(searchResponse.data.search);
-    throw Error("no results from GroundX search query");
-  }
-
-  console.log(searchResponse.data.search.text);
+if (opts.remoteUrl && !(opts.fileType && opts.fileName)) {
+  throw new Error("remote url is set but fileType/fileName is not");
 }
+
+if (opts.localFilePath) await ingest(bucketId, opts.localFilePath);
+if (opts.remoteUrl) await ingest(bucketId, opts.remoteUrl);
+if (opts.query) await search(bucketId);
+
