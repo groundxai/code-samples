@@ -8,11 +8,10 @@ if (!process.env.GROUNDX_API_KEY) {
 }
 
 const opts = {
-  query: "Transformer",
   bucketId: null,
   fileType: "pdf",
   fileName: "attention.pdf",
-  pathOrUrl: "/home/celestial/Documents/projects/eyelevel/code-samples/typescript/getting-started/attention.pdf"
+  pathOrUrl: "/home/celestial/Documents/projects/eyelevel/code-samples/typescript/getting-started/attention.pdf",
 };
 
 // initialize client
@@ -33,12 +32,12 @@ const usingBucket = async () => {
   return buckets.buckets[0].bucketId;
 }
 
-const ingest = async (bucketId, filePath) => {
+const ingest = async bucketId => {
   // upload local documents to GroundX
   let ingest = await client.ingest([
     {
       bucketId: bucketId,
-      filePath: filePath,
+      filePath: opts.pathOrUrl,
       fileName: opts.fileName,
       fileType: opts.fileType
     }
@@ -60,28 +59,13 @@ const ingest = async (bucketId, filePath) => {
   return ingest
 }
 
-const search = async bucketId => {
-  const searchResponse = await client.search.content(bucketId, {
-    query: opts.query
-  }).catch(err => {
-    throw new Error("GroundX search request failed: " + err);
-  });
-
-  if (!searchResponse.search.text) {
-    console.log(searchResponse.search);
-    throw new Error("no results from GroundX search query");
-  }
-
-  console.log(searchResponse.search.text);
-};
 
 let bucketId = opts.bucketId;
 if (!bucketId) bucketId = await usingBucket();
 
-if (opts.pathOrUrl && !(opts.fileType && opts.fileName)) {
+if (!opts.pathOrUrl || !opts.fileType || !opts.fileName) {
   throw new Error("pathOrUrl/fileType/fileName is not set");
 }
 
-if (opts.pathOrUrl) await ingest(bucketId, opts.pathOrUrl);
-if (opts.query) await search(bucketId);
+await ingest(bucketId);
 

@@ -1,4 +1,4 @@
-import { Groundx } from "groundx-typescript-sdk";
+import { GroundXClient } from "groundx";
 import OpenAI from 'openai';
 
 import dotenv from 'dotenv'; 
@@ -22,7 +22,7 @@ const instruction = "You are a helpful virtual assistant that answers questions 
 
 
 // Initialize the GroundX and OpenAI clients
-const groundx = new Groundx({
+const groundx = new GroundXClient({
     apiKey: process.env.GROUNDX_API_KEY,
 });
 
@@ -35,20 +35,18 @@ const openai = new OpenAI({
 const result = await groundx.search.content({
     id: groundxId,
     query: query,
+}).catch(err => {
+    throw Error("GroundX request failed: " + err);
 });
-if (!result || !result.status || result.status != 200 || !result.data || !result.data.search) {
-    console.error(result);
-    throw Error("GroundX request failed");
-}
 
-if (!result.data.search.text) {
+if (!result.search.text) {
     console.error("no results from search");
-    console.log(result.data.search);
+    console.log(result.search);
     throw Error("no results from GroundX search");
 }
 
 // Access our suggested retrieved context
-let llmText = result.data.search.text;
+let llmText = result.search.text;
 
 // Do an OpenAI completion with the search results
 const completion = await openai.chat.completions.create({

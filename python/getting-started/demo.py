@@ -7,15 +7,14 @@ from dotenv import load_dotenv
 load_dotenv()
 
 if os.getenv("GROUNDX_API_KEY") is None:
-    raise Exception("environemnt variable GROUNDX_API_KEY is not set")
+    raise Exception("environment variable GROUNDX_API_KEY is not set")
 
 opts = {
     "query": "Transformer",
     "bucket_id": None,
     "file_type": "pdf",
     "file_name": "attention.pdf",
-    "local_file_path": "/home/attention.pdf",
-    "remote_url": None
+    "path_or_url": "/home/attention.pdf"
 }
 
 # initialize client
@@ -35,7 +34,7 @@ def usingBucket():
         except OpenApiException as e:
             print("Exception when calling BucketApi.list: %s\n" % e)
 
-def ingest(bucket_id, file):
+def ingest(bucket_id):
     # upload local documents to GroundX
     try:
         ingest = client.ingest(
@@ -44,7 +43,7 @@ def ingest(bucket_id, file):
                         bucket_id = bucket_id,
                         file_name = opts["file_name"],
                         file_type = opts["file_type"],
-                        file_path = file
+                        file_path = opts["path_or_url"]
                     ),
                 ]
         )
@@ -74,15 +73,11 @@ bucket_id = opts["bucket_id"]
 if not bucket_id:
     bucket_id =  usingBucket()
 
-if opts["local_file_path"] and not (opts["file_type"] and opts["file_name"]):
-    raise Exception("local filepath is set but file_type/file_name is not")
-if opts["remote_url"] and not (opts["file_type"] and opts["file_name"]):
-    raise Exception("remote url is set but file_type/file_name is not")
+if opts["path_or_url"] and not (opts["file_type"] and opts["file_name"]):
+    raise Exception("path_or_url/file_type/file_name is nto set")
 
-if opts["local_file_path"]:
-    ingest(bucket_id, opts["local_file_path"])
-if opts["remote_url"]:
-    ingest(bucket_id, opts["remote_url"])
+if opts["path_or_url"]:
+    ingest(bucket_id)
 if opts["query"]:
     search(bucket_id)
 
