@@ -9,8 +9,6 @@ if os.getenv("GROUNDX_API_KEY") is None:
     raise Exception("You have not set a required environment variable (GROUNDX_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.")
 
 opts = {
-    "query": "YOUR QUERY",
-
     # set to a value to skip a bucket lookup
     # otherwise this demo will use the first result from get all buckets
     "bucket_id": None,
@@ -64,26 +62,12 @@ def ingest(bucket_id):
     except Exception as e:
         print("Exception when calling DocumentApi.upload_local: %s\n" % e)
 
-def search(bucket_id):
-    # search
-    try:
-        content_response = client.search.content(id=bucket_id, query=opts["query"])
-        if not content_response.search.text:
-            print("search query did not have results")
-        else:
-            print(content_response.search.text)
-    except Exception as e:
-        print("Exception when calling SearchApi.content: %s\n" % e)
-
 bucket_id = opts["bucket_id"]
 if not bucket_id:
     bucket_id =  usingBucket()
 
-if opts["path_or_url"] and not (opts["file_type"] and opts["file_name"]):
-    raise Exception("path_or_url/file_type/file_name is nto set")
+if not (opts["path_or_url"] and opts["file_type"] and opts["file_name"]):
+    raise Exception("path_or_url/file_type/file_name is not set")
 
-if opts["path_or_url"]:
-    ingest(bucket_id)
-if opts["query"]:
-    search(bucket_id)
+ingest(bucket_id)
 
