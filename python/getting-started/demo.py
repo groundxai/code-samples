@@ -1,20 +1,26 @@
 import os
 import time
 from groundx import GroundX, Document
-from groundx.exceptions_base import OpenApiException
 from dotenv import load_dotenv
 
 load_dotenv()
 
 if os.getenv("GROUNDX_API_KEY") is None:
-    raise Exception("environment variable GROUNDX_API_KEY is not set")
+    raise Exception("You have not set a required environment variable (GROUNDX_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.")
 
 opts = {
-    "query": "Transformer",
+    "query": "YOUR QUERY",
+
+    # set to a value to skip a bucket lookup
+    # otherwise this demo will use the first result from get all buckets
     "bucket_id": None,
-    "file_type": "pdf",
-    "file_name": "attention.pdf",
-    "path_or_url": "/home/attention.pdf"
+
+    # enumerated file type (e.g. docx, pdf)
+    "file_type": "",
+    "file_name": "",
+
+    # remote url or local file path for ingest
+    "path_or_url": ""
 }
 
 # initialize client
@@ -31,7 +37,7 @@ def usingBucket():
                 raise Exception("no results from buckets")
     
             return bucket_response.buckets[0].bucket_id
-        except OpenApiException as e:
+        except Exception as e:
             print("Exception when calling BucketApi.list: %s\n" % e)
 
 def ingest(bucket_id):
@@ -55,7 +61,7 @@ def ingest(bucket_id):
                 ):
             time.sleep(3)
             ingest = client.documents.get_processing_status_by_id(process_id=ingest.ingest.process_id)
-    except OpenApiException as e:
+    except Exception as e:
         print("Exception when calling DocumentApi.upload_local: %s\n" % e)
 
 def search(bucket_id):
@@ -66,7 +72,7 @@ def search(bucket_id):
             print("search query did not have results")
         else:
             print(content_response.search.text)
-    except OpenApiException as e:
+    except Exception as e:
         print("Exception when calling SearchApi.content: %s\n" % e)
 
 bucket_id = opts["bucket_id"]

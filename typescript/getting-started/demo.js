@@ -4,15 +4,22 @@ import dotenv from 'dotenv';
 dotenv.config();
 
 if (!process.env.GROUNDX_API_KEY) {
-  throw new Error("You have not set a required environment variable (GROUNDX_API_KEY or OPENAI_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
+  throw new Error("You have not set a required environment variable (GROUNDX_API_KEY). Copy .env.sample and rename it to .env then fill in the missing values.");
 }
 
 const opts = {
-  query: "Transformer",
-  bucketId: null,
-  fileType: "pdf",
-  fileName: "attention.pdf",
-  pathOrUrl: "/home/celestial/Documents/projects/eyelevel/code-samples/typescript/getting-started/attention.pdf"
+    query: "YOUR QUERY",
+
+    // set to a value to skip a bucket lookup
+    // otherwise this demo will use the first result from get all buckets
+    bucketId: null,
+
+    // enumerated file type (e.g. docx, pdf)
+    fileType: "",
+    fileName: "",
+
+    // remote url or local file path for ingest
+    pathOrUrl: ""
 };
 
 // initialize client
