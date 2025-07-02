@@ -131,7 +131,7 @@ dmypy.json
 .DS_Store
 cdk.out
 cdk.context.json
-*config.py*
+*config.py
 *config-*.py*
 test.py
 test.requirements.txt
